@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>TodoList</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/react/15.4.2/react.min.js"></script>
+    <script src="https://cdn.bootcss.com/react/15.4.2/react-dom.min.js"></script>
+    <script src="https://cdn.bootcss.com/babel-standalone/6.22.1/babel.min.js"></script>
+
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="lean-bar">
+<section id="example" class="todoapp"></section>
+<script type="text/babel">
+    class TodoList extends React.Component{
+        constructor (props) {
+            super(props);
+
+            this.state = {
+                item: "",
+                finish: false,
+                noChecked: [],
+                todolist: null
+            };
+            /*this.state = {
+                item: "",
+                finish: false,
+                noChecked: [],
+                todolist : {
+                    name: "todos",
+                    todos: [{
+                        completed: false,
+                        title: 'finish exercise'
+                    }, {
+                        completed: false,
+                        title: 'lean jsx'
+                    }, {
+                        completed: true,
+                        title: 'lean react'
+                    }],
+                    flag: "all"
+                }
+
+            }*/
+
+
+            this.onListAddhange = this.onListAddhange.bind(this);
+            this.handleGender = this.handleGender.bind(this);
+            this.handleAddEnter = this.handleAddEnter.bind(this);
+            this.handleDestroy = this.handleDestroy.bind(this);
+            this.handleEdit = this.handleEdit.bind(this);
+            this.handleDestroyCompleted = this.handleDestroyCompleted.bind(this);
+            this.handleChangeStatus = this.handleChangeStatus.bind(this);
+        }
+        componentDidMount() {
+            $.getJSON('data/things.json').done(function (data) {
+                this.setState({todolist: data});
+            }.bind(this));
+        }
+        onListAddhange (text) {
+            this.setState({item:text})
+        }
+        /*新增待处理事项*/
+        handleAddEnter (e) {
+            const {item,todolist} = this.state;
+            if (e.keyCode == 13 && item) {
+                todolist.todos.push({
+                    completed: false,
+                    title: item
+                });
+                e.target.value = "";
+                this.setState({
+                    todolist:todolist,
+                    item:""
+                })
+            }
+        }
+        /*改变完成状态*/
+        handleGender (todo) {
+            //此处todo是按值传递，他的值是object的地址；此处改变了item的completed值
+            const {todolist} = this.state;
+            todolist.todos.map((item)=>{
+                if (item === todo){
+                    item.completed = !todo.completed;
+                }
+            });
+            //更新状态触发渲染
+            this.setState({
+                todolist: todolist
+            });
+        }
+        /*删除事项*/
+        handleDestroy(todo){
+            const {todolist} = this.state;
+            todolist.todos.map((item,index)=>{
+                if(item === todo){
+                    delete todolist.todos[index];
+                }
+            });
+            this.setState({
+                todolist: todolist
+            })
+        }
+        /*修改事项*/
+        handleEdit(edit){
+            const {todolist} = this.state;
+            todolist.todos.map((item,index)=>{
+                if(item === edit.todo){
+                    item.title = edit.title;
+                }
+            });
+            this.setState({
+                todolist: todolist
+            })
+        }
+        /*删除所有已完成的事项*/
+        handleDestroyCompleted(){
+            const {todolist} = this.state;
+            todolist.todos.map((item, index) => {
+                item.completed && delete todolist.todos[index];
+            });
+            this.setState({
+                todolist: todolist
+            })
+        }
+        /*根据条件过滤事项*/
+        handleChangeStatus(value){
+            const {todolist} = this.state;
+            switch(value){
+                case 'all':
+                    todolist.flag = "all";
+                    break;
+                case 'active':
+                    todolist.flag = "active";
+                    break;
+                case 'completed':
+                    todolist.flag = "completed";
+                    break;
+            }
+            this.setState({
+                todolist: todolist
+            });
+        }
+        render () {
+            const { item,todolist } = this.state;
+
+            if (!todolist) {
+                return <div>Loading</div>;
+            }
+            return <div>
+                <Header todo={todolist} items={item} onAddhange={this.onListAddhange} onAddKeyUp = {this.handleAddEnter}/>
+                <Section todo={todolist} handleItemGender={this.handleGender} handleItemDestroy = {this.handleDestroy} handleItemEdit = {this.handleEdit}/>
+                <Footer todo={todolist} handleDestroy = {this.handleDestroyCompleted} changeStatus = {this.handleChangeStatus}/>
+            </div>
+        }
+    }
+    /*输入框及头部*/
+    class Header extends React.Component{
+        constructor(props){
+            super(props);
+            this.handleChange = this.handleChange.bind(this);
+            this.handleEnter = this.handleEnter.bind(this);
+        }
+        handleChange (e) {
+            this.props.onAddhange(e.target.value)
+        }
+        /*新增待处理事项*/
+        handleEnter (e) {
+            this.props.onAddKeyUp(e)
+        }
+        render(){
+            const item = this.props.items;
+            const todolist = this.props.todo;
+            return(
+                    <header className="header">
+                        <h1>{todolist.name}</h1>
+                        <input className="new-todo" placeholder="What needs to be done?" value={item} onChange={ this.handleChange } onKeyUp={ this.handleEnter }/>
+                    </header>
+            )
+        }
+    }
+    //底部操作
+    class Footer extends React.Component{
+        constructor(props){
+            super(props);
+            this.handleClearCompleted = this.handleClearCompleted.bind(this);
+            this.all = this.all.bind(this);
+            this.active = this.active.bind(this);
+            this.completed = this.completed.bind(this);
+        }
+        componentDidMount(){
+
+        }
+        handleClearCompleted(){
+            this.props.handleDestroy()
+        }
+        all(){
+            this.refs.all.className = 'selected';
+            this.refs.active.className = '';
+            this.refs.completed.className = '';
+            this.props.changeStatus("all");
+        }
+        active(){
+            this.refs.all.className = '';
+            this.refs.active.className = 'selected';
+            this.refs.completed.className = '';
+            this.props.changeStatus("active");
+        }
+        completed(){
+            this.refs.all.className = '';
+            this.refs.active.className = '';
+            this.refs.completed.className = 'selected';
+            this.props.changeStatus("completed");
+        }
+        render(){
+            const todolist = this.props.todo;
+            let lefted = todolist.todos.reduce((acc, todo) => {
+                return todo.completed ? acc : acc+1;
+            }, 0);
+            return(
+                    <footer className="footer">
+                        <span className="todo-count">
+                            <strong> {lefted} </strong> <span> </span> <span> items </span> <span> left </span>
+                        </span>
+                        <ul className="filters">
+                            <li> <a href="javascript:void(0)" ref="all" className="selected" onClick={this.all}> All </a> </li>
+                            <li> <a href="javascript:void(0)" ref="active" className="" onClick={this.active}> Active </a> </li>
+                            <li> <a href="javascript:void(0)" ref="completed" className="" onClick={this.completed}> Completed </a> </li>
+                        </ul>
+                        <button className="clear-completed" onClick={this.handleClearCompleted}>
+                            Clear completed
+                        </button>
+                    </footer>
+            )
+        }
+    }
+    //待处理事项
+    class Section extends React.Component{
+        constructor(props){
+            super(props);
+            this.handlesGender = this.handlesGender.bind(this);
+            this.handlesDestroy = this.handlesDestroy.bind(this);
+            this.handlesEdit = this.handlesEdit.bind(this);
+        }
+        handlesGender(todo){
+            this.props.handleItemGender(todo)
+        }
+        handlesDestroy(todo){
+            this.props.handleItemDestroy(todo)
+        }
+        handlesEdit(todo){
+            this.props.handleItemEdit(todo)
+        }
+        render(){
+            const todolist = this.props.todo;
+            return(
+                    <section className = "main">
+                        <input className="toggle-all" type="checkbox"/>
+                        <ul className="todo-list">
+                            {
+                                todolist.todos.map((todo, i) => {
+                                    return (
+                                            <SectionItem key={i} todo={todo} todolist={todolist} handleGender={this.handlesGender} handleDestroy={this.handlesDestroy} handleEdit={this.handlesEdit}/>
+                                    )
+                                })
+                            }
+                        </ul>
+                    </section>
+            )
+        }
+    }
+
+    //待处理事项具体
+    class SectionItem extends React.Component{
+        constructor(props){
+            super(props);
+            const { todo, todolist } = this.props,
+                that  =this;
+            if(todolist.flag==="active" && todo.completed){
+                that.state=({
+                    checked : true,
+                    className : "hide"
+                });
+            }else if(todolist.flag==="completed" && !todo.completed){
+                that.state=({
+                    checked : false,
+                    className : "hide"
+                });
+            }else if (todo.completed) {
+                that.state=({
+                    checked : true,
+                    className : "completed"
+                });
+            }else {
+                that.state=({
+                    checked: false,
+                    className:""
+                });
+            }
+            this.edit = this.edit.bind(this);
+            this.handlesGender = this.handlesGender.bind(this);
+            this.handlesDestroy = this.handlesDestroy.bind(this);
+            this.handlesEdit = this.handlesEdit.bind(this);
+            this.handleBlur = this.handleBlur.bind(this);
+        }
+        //组件接收到新的props时调用
+        componentWillReceiveProps (nextProps){
+            const { todo, todolist } = nextProps,
+                that  =this;
+            if(todolist.flag==="active" && todo.completed){
+                that.state=({
+                    checked : true,
+                    className : "hide"
+                });
+            }else if(todolist.flag==="completed" && !todo.completed){
+                that.state=({
+                    checked : false,
+                    className : "hide"
+                });
+            }else if (todo.completed) {
+                that.state=({
+                    checked : true,
+                    className : "completed"
+                });
+            }else {
+                that.state=({
+                    checked: false,
+                    className:""
+                });
+            }
+        }
+        edit(){
+            const {className} = this.state;
+            if(!className) {
+                this.setState({
+                    className : "editing"
+                })
+            }else {
+                this.setState({
+                    className : "editing completed"
+                });
+            }
+            this.refs.view.style.display="none";
+            this.refs.edit.style.display="block";
+            this.refs.edit.focus();
+        }
+        handlesGender(){
+            this.props.handleGender(this.props.todo);
+        }
+        handlesDestroy(){
+            this.props.handleDestroy(this.props.todo);
+        }
+        handlesEdit(e){
+            let that = this;
+            if(e.keyCode===13) {
+                that.refs.view.style.display = "block";
+                that.refs.edit.style.display = "none";
+                let edit = {
+                    todo: this.props.todo,
+                    title: this.refs.edit.value
+                };
+                this.props.handleEdit(edit);
+            }
+        }
+        handleBlur(){
+            this.refs.view.style.display = "block";
+            this.refs.edit.style.display = "none";
+            let edit = {
+                todo: this.props.todo,
+                title: this.refs.edit.value
+            };
+            this.props.handleEdit(edit);
+        }
+        render(){
+            const { todo } = this.props;
+            const { className, checked } = this.state;
+            return(
+                    <li className={className}>
+                        <div className="view" ref="view" onDoubleClick={this.edit}>
+                            <input type="checkbox" className="toggle" checked={checked} onClick={ this.handlesGender}/>
+                            <label>{todo.title}</label>
+                            <button className="destroy" onClick={this.handlesDestroy}> </button>
+                        </div>
+                        <input type="text" className="edit" ref="edit" defaultValue = {todo.title} onKeyUp ={ this.handlesEdit }  onBlur={this.handleBlur} />
+                    </li>
+            )
+        }
+    }
+    ReactDOM.render(
+            <TodoList name = "niki" />,
+        document.getElementById("example")
+    );
+</script>
+
+</body>
+</html>
