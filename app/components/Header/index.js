@@ -19,7 +19,7 @@ class Header extends Component{
         return(
             <header className="header">
                 <h1>{todolist.name}</h1>
-                <input className="new-todo" placeholder="What needs to be done?" value={item} onChange={ this.handleChange } onKeyUp={ this.handleEnter }/>
+                <input className="new-todo" placeholder="今天也要好好爱TVXQ喔！" value={item} onChange={ this.handleChange } onKeyUp={ this.handleEnter }/>
             </header>
         )
     }
